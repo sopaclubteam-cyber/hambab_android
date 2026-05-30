@@ -28,14 +28,29 @@ cp local.properties.example local.properties   # sdk.dir 경로 확인
 
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| Keystore 발급 | 미완 | `keytool -genkey -v -keystore hambab.keystore -alias hambab -keyalg RSA -keysize 2048 -validity 10000` |
-| `app/build.gradle.kts` signingConfig 등록 | 미완 | CEO 가 keystore 경로/비번 입력 |
+| Keystore 발급 | ✅ 2026-05-30 자동 발급 | RSA 2048 / 25년 유효 (만료 2051-05-24). 파일: `hambab-release.keystore` (.gitignore 보호) |
+| `app/build.gradle.kts` signingConfig 등록 | ✅ | `local.properties` 의 4개 키 읽어서 자동 적용 |
+| **Signed AAB 빌드** | ✅ **13MB** = `app/build/outputs/bundle/release/app-release.aab` |
 | Privacy Policy URL | 미완 | `https://hambab.com/privacy` stub — 실 페이지 CEO 작성 |
 | App Icon — Play Console 업로드용 512px PNG | 미완 | `mipmap-*` 의 현재 기본 아이콘 교체 권장 |
 | 스크린샷 5장 (폰 + 10인치 태블릿 각 1장 이상) | 미완 | 에뮬레이터 또는 실기기 캡처 |
 | Data Safety 폼 답변 (Play Console UI 클릭) | 미완 | 아래 "Data Safety 답변지" 참고 |
 | 앱 설명 (Play Console 스토어 등록 정보) | 미완 | 아래 "스토어 설명 초안" 참고 |
 | Play Console 첫 내부 테스트 트랙 등록 | 미완 | AAB 업로드 → 내부 테스터 추가 → 검토 후 프로덕션 |
+
+### ⚠️ Keystore 백업 (지금 즉시)
+
+`hambab-release.keystore` + 비밀번호를 **잃어버리면 앱을 영영 업데이트 못 합니다** (Play 가 새 keystore 거부).
+
+1. `hambab-release.keystore` 파일을 1Password / Google Drive / iCloud 등 안전한 곳에 백업
+2. 비밀번호는 `local.properties` 의 `hambab.keystore.password` 값 (= `hambab.key.password` 동일)
+3. 인증서 정보:
+   - 알고리즘: RSA 2048 / SHA384withRSA
+   - 만료: 2051-05-24
+   - SHA-1: `C3:B1:21:AE:54:C8:09:57:31:CE:12:42:99:54:3B:B8:7A:D8:A6:CD`
+   - SHA-256: `0E:AA:CF:96:46:AC:2D:55:5C:E5:2D:E5:A5:8F:2C:0D:76:44:7E:61:E0:C7:56:63:7F:97:33:C6:F4:50:77:5A`
+
+SHA-1 은 Firebase / 카카오 SDK / 구글 로그인 콘솔에 등록할 때 필요합니다 (v1 미사용, v2 부터).
 
 ### 자동 완료 (코드에서 처리됨)
 
@@ -44,9 +59,12 @@ cp local.properties.example local.properties   # sdk.dir 경로 확인
 | `targetSdk = 35` (2025+ 강제) | ✅ |
 | `minSdk = 26` | ✅ |
 | INTERNET 권한 only | ✅ READ_CONTACTS / AD_ID / 위치 없음 |
+| 광고 SDK / Firebase / Kakao 미사용 | ✅ Play 함정 0건 |
+| 아이콘 alpha 채널 | ✅ adaptive vector (1024 PNG 함정 회피) |
 | Privacy Policy URL stub `https://hambab.com/privacy` | ✅ (manifest 추가 아래 참고) |
 | `proguard-rules.pro` 기본 룰 | ✅ Kakao SDK 미사용 → v1 OK |
 | `versionCode = 1`, `versionName = "0.1.0"` | ✅ |
+| **Release signingConfig + signed AAB** | ✅ jarsigner 검증 통과, 2051년 만료 |
 
 ### Privacy Policy URL — Manifest 추가 방법
 `AndroidManifest.xml` 의 `<application>` 태그에 아래를 추가하세요 (CEO 액션):

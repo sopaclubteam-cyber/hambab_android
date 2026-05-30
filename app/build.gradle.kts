@@ -1,8 +1,26 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
+
+// local.properties 에서 keystore 비밀번호 로드 (gitignore 보호)
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(FileInputStream(f))
+}
+val ksPath: String? = localProps.getProperty("hambab.keystore.path")
+val ksStorePassword: String? = localProps.getProperty("hambab.keystore.password")
+val ksAlias: String? = localProps.getProperty("hambab.key.alias")
+val ksKeyPassword: String? = localProps.getProperty("hambab.key.password")
+val hasReleaseKey = !ksPath.isNullOrBlank()
+        && !ksStorePassword.isNullOrBlank()
+        && !ksAlias.isNullOrBlank()
+        && !ksKeyPassword.isNullOrBlank()
+        && rootProject.file(ksPath!!).exists()
 
 android {
     namespace = "duckring.hambab.com"
@@ -19,6 +37,17 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = rootProject.file(ksPath!!)
+                storePassword = ksStorePassword
+                keyAlias = ksAlias
+                keyPassword = ksKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             isDebuggable = true
@@ -26,6 +55,9 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasReleaseKey) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
