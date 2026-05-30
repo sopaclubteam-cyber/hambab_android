@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -31,9 +33,11 @@ import com.hambab.app.ui.theme.HbAmber
 import com.hambab.app.ui.theme.HbAmberDeep
 import com.hambab.app.ui.theme.HbBorder
 import com.hambab.app.ui.theme.HbBrown
+import com.hambab.app.ui.theme.HbButtonShape
 import com.hambab.app.ui.theme.HbCream
 import com.hambab.app.ui.theme.HbCreamCard
 import com.hambab.app.ui.theme.HbFgSoft
+import com.hambab.app.ui.theme.HbShadowStrong
 
 @Composable
 fun HambabTopBar(
@@ -85,10 +89,12 @@ fun HambabTopBar(
     }
 }
 
+// 5탭 구조: 홈 / 피드 / [+발행 amber 중앙] / 지금·예약 / 내 함밥
 @Composable
 fun HambabBottomBar(
     current: String,
     onSelect: (String) -> Unit,
+    onCreateFeed: () -> Unit = {},
 ) {
     Box(
         Modifier
@@ -106,8 +112,31 @@ fun HambabBottomBar(
         horizontalArrangement = Arrangement.SpaceAround,
     ) {
         BarItem("home", "홈", Icons.Outlined.Home, current) { onSelect("home") }
+        BarItem("feed", "피드", Icons.Outlined.GridView, current) { onSelect("feed") }
+        // 중앙 + 발행 버튼 (amber, 인스타 + 버튼처럼)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onCreateFeed() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .shadow(4.dp, HbButtonShape, ambientColor = HbShadowStrong, spotColor = HbShadowStrong)
+                    .clip(HbButtonShape)
+                    .background(HbAmber),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.Add,
+                    contentDescription = "피드 올리기",
+                    tint = HbCreamCard,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
         BarItem("now", "지금", Icons.Outlined.Bolt, current) { onSelect("now") }
-        BarItem("scheduled", "예약", Icons.Outlined.CalendarToday, current) { onSelect("scheduled") }
         BarItem("profile", "내 함밥", Icons.Outlined.Person, current) { onSelect("profile") }
     }
 }

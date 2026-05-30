@@ -1,5 +1,6 @@
 package com.hambab.app.util
 
+import com.hambab.app.data.model.PostKind
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -55,3 +56,38 @@ fun formatDateTime(epochMs: Long): String = DT_FMT.format(Date(epochMs))
 
 @Suppress("unused")
 fun formatTimeOnly(epochMs: Long): String = TIME_FMT.format(Date(epochMs))
+
+/** 피드 카드 시간 표기 — live: "15분 전", scheduled: "오늘 오후 7시", review: "어제" 등 */
+fun formatFeedTime(epochMs: Long, kind: PostKind): String {
+    val diffMs = System.currentTimeMillis() - epochMs
+    return when (kind) {
+        PostKind.live -> {
+            val mins = diffMs / 60_000L
+            when {
+                mins < 1L -> "방금"
+                mins < 60L -> "${mins}분 전"
+                else -> "${mins / 60}시간 전"
+            }
+        }
+        PostKind.review -> {
+            val days = diffMs / (24 * 60 * 60_000L)
+            when {
+                days < 1L -> "오늘"
+                days < 2L -> "어제"
+                else -> "${days}일 전"
+            }
+        }
+        else -> formatMeetTime(epochMs)  // scheduled / restaurant
+    }
+}
+
+fun PostKind.label(): String = when (this) {
+    PostKind.live       -> "지금"
+    PostKind.scheduled  -> "예약"
+    PostKind.restaurant -> "식당"
+    PostKind.review     -> "후기"
+}
+
+// top-level alias for import clarity in PostCard
+fun districtLabel(d: com.hambab.app.data.model.District) = d.label()
+fun postKindLabel(k: PostKind) = k.label()

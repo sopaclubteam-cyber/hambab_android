@@ -80,3 +80,63 @@ data class DensityStat(
     val pendingSeats: Int,
     val label: String,
 )
+
+// ─── 콘텐츠 피드 (Web lib/types.ts PostKind 1:1 미러) ─────────────────────────
+// 끝점이 "같이 먹기 1탭 CTA" — 자랑/팔로워/체류 KPI 없음.
+
+enum class PostKind { live, scheduled, restaurant, review }
+enum class PostModeration { pending, approved, rejected, hidden }
+enum class PostAppetiteAction { view, tap, cta_click }
+
+data class Post(
+    val id: String,
+    val kind: PostKind,
+    val authorId: String,
+    // 콘텐츠 — emoji 로 대체 (mock)
+    val photoUrls: List<String>,              // mock 에서 emoji 1개 문자열로 대체
+    val caption: String? = null,
+    // 필수 메타
+    val menu: MenuCategory,
+    val district: District,
+    val restaurantId: String? = null,
+    val spotLabel: String? = null,
+    val timeContext: Long,                    // epoch ms
+    val tags: List<VibeTag> = emptyList(),
+    // 전환 연결
+    val mealId: String? = null,
+    // 모더레이션
+    val moderation: PostModeration = PostModeration.pending,
+    val reportCount: Int = 0,
+    // 식욕 신호 — cta*5 + tap*2 + view*0.1
+    val appetiteScore: Int = 0,
+    val viewCount: Int = 0,
+    val tapCount: Int = 0,
+    val ctaClickCount: Int = 0,
+    // 부스트 (식당만, epoch ms null = 미부스트)
+    val boostUntil: Long? = null,
+    val createdAt: Long = System.currentTimeMillis(),
+)
+
+data class PostAppetiteLog(
+    val id: String,
+    val postId: String,
+    val userId: String? = null,
+    val action: PostAppetiteAction,
+    val at: Long = System.currentTimeMillis(),
+)
+
+data class PostToMeal(
+    val id: String,
+    val postId: String,
+    val mealId: String,
+    val userId: String,
+    val convertedAt: Long = System.currentTimeMillis(),
+)
+
+// UI 조립 뷰
+data class PostWithMeta(
+    val post: Post,
+    val author: User,
+    val restaurant: Restaurant? = null,
+    val meal: MealWithMeta? = null,
+)

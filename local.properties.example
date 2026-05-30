@@ -2,3 +2,7 @@
 
 # Android SDK 경로 (Mac 기본)
 sdk.dir=/Users/YOUR_USER/Library/Android/sdk
+
+# Supabase (Supabase 연동 시 CEO 가 채울 것 — 실 키 절대 커밋 X)
+# SUPABASE_URL=https://XXXXXXXXXXXXXXXX.supabase.co
+# SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.PLACEHOLDER

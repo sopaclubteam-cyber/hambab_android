@@ -18,6 +18,9 @@ import com.hambab.app.data.auth.AuthRepository
 import com.hambab.app.ui.component.HambabBottomBar
 import com.hambab.app.ui.component.HambabTopBar
 import com.hambab.app.ui.screen.detail.MealDetailScreen
+import com.hambab.app.ui.screen.feed.FeedDetailScreen
+import com.hambab.app.ui.screen.feed.FeedNewScreen
+import com.hambab.app.ui.screen.feed.FeedScreen
 import com.hambab.app.ui.screen.home.HomeScreen
 import com.hambab.app.ui.screen.login.LoginScreen
 import com.hambab.app.ui.screen.newmeal.NewMealScreen
@@ -33,7 +36,14 @@ object HambabRoute {
     const val MEAL_DETAIL = "meals/{mealId}"
     const val PROFILE = "profile"
     const val LOGIN = "login"
+
+    // 피드 라우트
+    const val FEED = "feed"
+    const val FEED_DETAIL = "feed/{postId}"
+    const val FEED_NEW = "feed/new"
+
     fun mealDetail(id: String) = "meals/$id"
+    fun feedDetail(id: String) = "feed/$id"
 }
 
 @Composable
@@ -41,13 +51,18 @@ fun HambabNavHost() {
     val nav = rememberNavController()
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
     val tabKey = when {
-        currentRoute == HambabRoute.HOME -> "home"
-        currentRoute == HambabRoute.NOW -> "now"
+        currentRoute == HambabRoute.HOME      -> "home"
+        currentRoute == HambabRoute.FEED      -> "feed"
+        currentRoute == HambabRoute.NOW       -> "now"
         currentRoute == HambabRoute.SCHEDULED -> "scheduled"
-        currentRoute == HambabRoute.PROFILE -> "profile"
+        currentRoute == HambabRoute.PROFILE   -> "profile"
         else -> ""
     }
-    val showChrome = currentRoute != HambabRoute.LOGIN
+    // 크롬 없는 화면 (로그인, 피드상세, 피드작성, 밀폼)
+    val showChrome = currentRoute != HambabRoute.LOGIN &&
+        currentRoute != HambabRoute.FEED_DETAIL &&
+        currentRoute != HambabRoute.FEED_NEW &&
+        currentRoute != HambabRoute.NEW_MEAL
 
     val currentUserId by AuthRepository.currentUserId.collectAsState()
     val nicknameOrCta = AuthRepository.currentUser()?.nickname ?: "시작하기"
@@ -70,22 +85,30 @@ fun HambabNavHost() {
         },
         bottomBar = {
             if (showChrome) {
-                HambabBottomBar(current = tabKey) { key ->
-                    val target = when (key) {
-                        "home" -> HambabRoute.HOME
-                        "now" -> HambabRoute.NOW
-                        "scheduled" -> HambabRoute.SCHEDULED
-                        "profile" -> if (currentUserId == null) HambabRoute.LOGIN else HambabRoute.PROFILE
-                        else -> HambabRoute.HOME
-                    }
-                    if (currentRoute != target) {
-                        nav.navigate(target) {
-                            popUpTo(HambabRoute.HOME) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+                HambabBottomBar(
+                    current = tabKey,
+                    onCreateFeed = {
+                        if (currentUserId == null) nav.navigate(HambabRoute.LOGIN)
+                        else nav.navigate(HambabRoute.FEED_NEW)
+                    },
+                    onSelect = { key ->
+                        val target = when (key) {
+                            "home"      -> HambabRoute.HOME
+                            "feed"      -> HambabRoute.FEED
+                            "now"       -> HambabRoute.NOW
+                            "scheduled" -> HambabRoute.SCHEDULED
+                            "profile"   -> if (currentUserId == null) HambabRoute.LOGIN else HambabRoute.PROFILE
+                            else        -> HambabRoute.HOME
                         }
-                    }
-                }
+                        if (currentRoute != target) {
+                            nav.navigate(target) {
+                                popUpTo(HambabRoute.HOME) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    },
+                )
             }
         },
     ) { inner ->
@@ -103,6 +126,38 @@ fun HambabNavHost() {
                             if (currentUserId == null) nav.navigate(HambabRoute.LOGIN)
                             else nav.navigate(HambabRoute.NEW_MEAL)
                         },
+                    )
+                }
+                composable(HambabRoute.FEED) {
+                    FeedScreen(
+                        onPost = { id -> nav.navigate(HambabRoute.feedDetail(id)) },
+                        onCreate = {
+                            if (currentUserId == null) nav.navigate(HambabRoute.LOGIN)
+                            else nav.navigate(HambabRoute.FEED_NEW)
+                        },
+                        onMeal = { id -> nav.navigate(HambabRoute.mealDetail(id)) },
+                    )
+                }
+                composable(
+                    route = HambabRoute.FEED_DETAIL,
+                    arguments = listOf(navArgument("postId") { type = NavType.StringType }),
+                ) { backStack ->
+                    val postId = backStack.arguments?.getString("postId").orEmpty()
+                    FeedDetailScreen(
+                        postId = postId,
+                        onBack = { nav.popBackStack() },
+                        onMeal = { id -> nav.navigate(HambabRoute.mealDetail(id)) },
+                        onPost = { id -> nav.navigate(HambabRoute.feedDetail(id)) },
+                        onCta = { _ ->
+                            if (currentUserId == null) nav.navigate(HambabRoute.LOGIN)
+                            else nav.navigate(HambabRoute.NEW_MEAL)
+                        },
+                    )
+                }
+                composable(HambabRoute.FEED_NEW) {
+                    FeedNewScreen(
+                        onBack = { nav.popBackStack() },
+                        onPublished = { nav.popBackStack() },
                     )
                 }
                 composable(HambabRoute.NOW) {
@@ -151,4 +206,3 @@ fun HambabNavHost() {
         }
     }
 }
-

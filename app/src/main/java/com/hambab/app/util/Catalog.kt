@@ -48,3 +48,6 @@ fun MenuCategory.emoji() = MENUS.firstOrNull { it.key == this }?.emoji ?: "🍽�
 fun District.label() = DISTRICTS.firstOrNull { it.key == this }?.label ?: name
 fun VibeTag.label() = VIBE_TAGS.firstOrNull { it.key == this }?.label ?: name
 fun TrustGrade.label() = TRUST_GRADES[this]?.label ?: name
+
+// District 레이블 (PostCard 에서 import 가능하도록 top-level alias 추가)
+fun District.districtLabel() = label()
