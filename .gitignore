@@ -1,0 +1,19 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+google-services.json
+/app/release
+/app/debug
+*.keystore
+*.jks
+
+# build / cache 보강 (Android 표준)
+**/build/
+.kotlin/

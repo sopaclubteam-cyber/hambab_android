@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 함밥 v1 — 라이트 only. 시스템 status bar 도 cream 톤 유지. -->
+    <style name="Theme.Hambab.Splash" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/hb_cream</item>
+        <item name="android:navigationBarColor">@color/hb_cream</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">@color/hb_cream</item>
+    </style>
+</resources>

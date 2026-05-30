@@ -1,0 +1,4 @@
+## 함밥 — 로컬 빌드 설정 예시. local.properties 로 복사.
+
+# Android SDK 경로 (Mac 기본)
+sdk.dir=/Users/YOUR_USER/Library/Android/sdk

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 함밥 톤 (스킬 hambab-design 기준) -->
+    <color name="hb_cream">#FEF7E5</color>
+    <color name="hb_cream_soft">#FBF1D8</color>
+    <color name="hb_cream_card">#FFFFFF</color>
+    <color name="hb_amber">#F59E0B</color>
+    <color name="hb_amber_deep">#D97706</color>
+    <color name="hb_brown">#7C2D12</color>
+    <color name="hb_fg">#1F2937</color>
+</resources>
