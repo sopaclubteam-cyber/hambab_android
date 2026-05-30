@@ -24,4 +24,4 @@
 -keep class kotlin.coroutines.** { *; }
 
 # Data classes — JSON 직렬화 시 필요 (Supabase 연동 후)
-# -keep class com.hambab.app.data.model.** { *; }
+# -keep class duckring.hambab.com.data.model.** { *; }

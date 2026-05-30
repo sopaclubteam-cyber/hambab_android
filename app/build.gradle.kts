@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hambab.app"
+    namespace = "duckring.hambab.com"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.hambab.app"
+        applicationId = "duckring.hambab.com"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

@@ -30,7 +30,7 @@ cp local.properties.example local.properties   # sdk.dir 경로 확인
 |---|---|---|
 | Keystore 발급 | 미완 | `keytool -genkey -v -keystore hambab.keystore -alias hambab -keyalg RSA -keysize 2048 -validity 10000` |
 | `app/build.gradle.kts` signingConfig 등록 | 미완 | CEO 가 keystore 경로/비번 입력 |
-| Privacy Policy URL | 미완 | `https://hambab.app/privacy` stub — 실 페이지 CEO 작성 |
+| Privacy Policy URL | 미완 | `https://hambab.com/privacy` stub — 실 페이지 CEO 작성 |
 | App Icon — Play Console 업로드용 512px PNG | 미완 | `mipmap-*` 의 현재 기본 아이콘 교체 권장 |
 | 스크린샷 5장 (폰 + 10인치 태블릿 각 1장 이상) | 미완 | 에뮬레이터 또는 실기기 캡처 |
 | Data Safety 폼 답변 (Play Console UI 클릭) | 미완 | 아래 "Data Safety 답변지" 참고 |
@@ -44,7 +44,7 @@ cp local.properties.example local.properties   # sdk.dir 경로 확인
 | `targetSdk = 35` (2025+ 강제) | ✅ |
 | `minSdk = 26` | ✅ |
 | INTERNET 권한 only | ✅ READ_CONTACTS / AD_ID / 위치 없음 |
-| Privacy Policy URL stub `https://hambab.app/privacy` | ✅ (manifest 추가 아래 참고) |
+| Privacy Policy URL stub `https://hambab.com/privacy` | ✅ (manifest 추가 아래 참고) |
 | `proguard-rules.pro` 기본 룰 | ✅ Kakao SDK 미사용 → v1 OK |
 | `versionCode = 1`, `versionName = "0.1.0"` | ✅ |
 
@@ -153,7 +153,7 @@ app/src/main/java/com/hambab/app/
 
 1. Play Console 첫 내부 테스트 트랙 등록 (AAB 업로드)
 2. CEO Keystore 발급 + `signingConfig` 등록
-3. Privacy Policy 실 페이지 작성 (`https://hambab.app/privacy`)
+3. Privacy Policy 실 페이지 작성 (`https://hambab.com/privacy`)
 4. Supabase 연동 — `FeedStore` / `MockStore` → `SupabaseStore` swap
 5. Pretendard 폰트 추가 (`res/font/pretendard.xml`)
 6. 카카오 로그인 (android-build-playbook 함정 #18 참고)
