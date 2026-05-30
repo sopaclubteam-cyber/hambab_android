@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,10 +31,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,18 +45,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import duckring.hambab.com.data.model.*
+import duckring.hambab.com.data.store.FeedRepository
 import duckring.hambab.com.data.store.FeedStore
 import duckring.hambab.com.ui.component.EmptyState
 import duckring.hambab.com.ui.component.PostCard
 import duckring.hambab.com.ui.theme.*
 import duckring.hambab.com.util.label
 import duckring.hambab.com.util.formatFeedTime
+import kotlinx.coroutines.launch
 
 // FeedScreen — 인스타 홈 피드 구조 차용.
-// 인스타와의 차이:
-//   LiveStrip = "지금 먹는 중" (스토리 circle 패턴 차용, 팔로워 개념 X)
-//   CTA = "같이 먹기" 1탭 (좋아요/댓글/공유 row 없음)
-//   정렬 = boost → live → appetite_score (체류 알고리즘 X)
+// v0.2.0: FeedRepository 경유 — Supabase 설정 시 실 DB, 미설정 시 mock fall-through.
+// LaunchedEffect(filter 변경) 로 pull/refresh 패턴.
 
 @Composable
 fun FeedScreen(
@@ -65,19 +64,38 @@ fun FeedScreen(
     onCreate: () -> Unit,
     onMeal: (String) -> Unit,
 ) {
-    // StateFlow 수신 — posts 변경 시 자동 리컴포즈
-    val postsSnapshot by FeedStore.posts.collectAsState()
-    @Suppress("UNUSED_VARIABLE")
-    val recomposeTrigger = postsSnapshot.size
+    val scope = rememberCoroutineScope()
 
     var filterKind by remember { mutableStateOf<PostKind?>(null) }
     var filterDistrict by remember { mutableStateOf<District?>(null) }
     var filterMenu by remember { mutableStateOf<MenuCategory?>(null) }
 
-    val feed = remember(postsSnapshot, filterKind, filterDistrict, filterMenu) {
-        FeedStore.listFeed(kind = filterKind, district = filterDistrict, menu = filterMenu)
+    var feed by remember { mutableStateOf<List<PostWithMeta>>(emptyList()) }
+    var liveStrip by remember { mutableStateOf<List<PostWithMeta>>(emptyList()) }
+    var loadKey by remember { mutableStateOf(0) }  // pull-to-refresh 트리거
+
+    // 필터 변경 or 강제 재로드 시 Supabase(또는 mock) 에서 재조회
+    LaunchedEffect(filterKind, filterDistrict, filterMenu, loadKey) {
+        feed = FeedRepository.listFeed(
+            kind = filterKind,
+            district = filterDistrict,
+            menu = filterMenu,
+        )
     }
-    val liveStrip = remember(postsSnapshot) { FeedStore.listLiveStrip() }
+    LaunchedEffect(loadKey) {
+        liveStrip = FeedRepository.listLiveStrip()
+    }
+
+    // mock 변경 감지 — FeedStore.posts 변경 시 로컬 목록 자동 갱신
+    val postsSnapshot by FeedStore.posts.collectAsState()
+    LaunchedEffect(postsSnapshot.size) {
+        // mock 모드에서 FeedStore 가 변경되면 피드 목록 재조회
+        feed = FeedRepository.listFeed(
+            kind = filterKind,
+            district = filterDistrict,
+            menu = filterMenu,
+        )
+    }
 
     Scaffold(
         containerColor = HbCream,
@@ -204,18 +222,22 @@ fun FeedScreen(
                 }
             } else {
                 items(feed, key = { it.post.id }) { postWithMeta ->
-                    // 카드 노출 시 appetite view 자동 트리거
+                    // 카드 노출 시 appetite view 자동 트리거 (Supabase 또는 mock)
                     LaunchedEffect(postWithMeta.post.id) {
-                        FeedStore.recordAppetite(postWithMeta.post.id, PostAppetiteAction.view)
+                        FeedRepository.recordAppetite(postWithMeta.post.id, PostAppetiteAction.view)
                     }
                     PostCard(
                         post = postWithMeta,
                         onTap = { id ->
-                            FeedStore.recordAppetite(id, PostAppetiteAction.tap)
+                            scope.launch {
+                                FeedRepository.recordAppetite(id, PostAppetiteAction.tap)
+                            }
                             onPost(id)
                         },
                         onCta = { id ->
-                            FeedStore.recordAppetite(id, PostAppetiteAction.cta_click)
+                            scope.launch {
+                                FeedRepository.recordAppetite(id, PostAppetiteAction.cta_click)
+                            }
                             val mealId = postWithMeta.post.mealId
                             if (mealId != null) onMeal(mealId)
                             else onPost(id)  // 상세에서 CTA 처리

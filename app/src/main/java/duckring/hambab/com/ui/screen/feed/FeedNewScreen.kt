@@ -47,7 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import duckring.hambab.com.data.auth.AuthRepository
 import duckring.hambab.com.data.model.*
-import duckring.hambab.com.data.store.FeedStore
+import duckring.hambab.com.data.store.FeedRepository
 import duckring.hambab.com.ui.component.CtaButton
 import duckring.hambab.com.ui.component.TagChip
 import duckring.hambab.com.ui.theme.*
@@ -320,18 +320,18 @@ fun FeedNewScreen(
                         selectedDistrict == null -> validationError = "지역을 선택해 주세요."
                         else -> {
                             val userId = AuthRepository.currentUserId.value ?: "u_guest"
-                            FeedStore.createPost(
-                                kind = selectedKind,
-                                authorId = userId,
-                                photoUrls = listOf(selectedEmoji!!),
-                                caption = caption.trim().ifBlank { null },
-                                menu = selectedMenu!!,
-                                district = selectedDistrict!!,
-                                spotLabel = spotLabel.trim().ifBlank { null },
-                                timeContext = System.currentTimeMillis(),
-                                tags = selectedTags.toList(),
-                            )
                             scope.launch {
+                                FeedRepository.createPost(
+                                    kind = selectedKind,
+                                    authorId = userId,
+                                    photoUrls = listOf(selectedEmoji!!),
+                                    caption = caption.trim().ifBlank { null },
+                                    menu = selectedMenu!!,
+                                    district = selectedDistrict!!,
+                                    spotLabel = spotLabel.trim().ifBlank { null },
+                                    timeContextMs = System.currentTimeMillis(),
+                                    tags = selectedTags.toList(),
+                                )
                                 snackbar.showSnackbar("검수 후 피드에 노출돼요. 보통 24시간 내 처리됩니다.")
                             }
                             onPublished()

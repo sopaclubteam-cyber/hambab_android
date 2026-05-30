@@ -30,11 +30,18 @@ android {
         applicationId = "duckring.hambab.com"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        // Supabase 연결 정보 — local.properties 에서 주입 (gitignore 보호)
+        // 키 누락 시 빈 문자열 → mock 모드 fall-through (offline-safe)
+        buildConfigField("String", "SUPABASE_URL",
+            "\"${localProps.getProperty("SUPABASE_URL", "")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY",
+            "\"${localProps.getProperty("SUPABASE_ANON_KEY", "")}\"")
     }
 
     signingConfigs {
@@ -53,7 +60,7 @@ android {
             isDebuggable = true
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (hasReleaseKey) {
                 signingConfig = signingConfigs.getByName("release")
@@ -63,7 +70,7 @@ android {
 
     buildFeatures {
         compose = true
-        buildConfig = false
+        buildConfig = true
     }
 
     compileOptions {
@@ -78,6 +85,9 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // Ktor / Supabase 메타파일 중복 제거
+            excludes += "META-INF/INDEX.LIST"
+            excludes += "META-INF/io.netty.versions.properties"
         }
     }
 }
@@ -103,6 +113,11 @@ dependencies {
 
     // Material (XML themes for Activity)
     implementation(libs.material.android)
+
+    // Supabase Kotlin SDK (postgrest + auth) + Ktor OkHttp transport
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.auth)
+    implementation(libs.ktor.client.okhttp)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

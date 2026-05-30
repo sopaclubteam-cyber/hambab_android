@@ -28,9 +28,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,7 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import duckring.hambab.com.data.model.*
-import duckring.hambab.com.data.store.FeedStore
+import duckring.hambab.com.data.store.FeedRepository
 import duckring.hambab.com.ui.component.MannerBadge
 import duckring.hambab.com.ui.component.PostCardCompact
 import duckring.hambab.com.ui.component.TagChip
@@ -48,9 +50,10 @@ import duckring.hambab.com.ui.component.CtaButton
 import duckring.hambab.com.ui.theme.*
 import duckring.hambab.com.util.formatFeedTime
 import duckring.hambab.com.util.label
+import kotlinx.coroutines.launch
 
 // FeedDetailScreen — 인스타 단일 포스트 상세 차용.
-// 차이: 하트/댓글/공유 없음. CTA = "같이 먹기" 1탭. 관련 콘텐츠 재유입 loop.
+// v0.2.0: FeedRepository 경유 — tap 신호 Supabase 로 전송.
 
 @Composable
 fun FeedDetailScreen(
@@ -58,35 +61,37 @@ fun FeedDetailScreen(
     onBack: () -> Unit,
     onMeal: (String) -> Unit,
     onPost: (String) -> Unit,
-    onCta: (String) -> Unit,  // CTA 탭 — meal_id 있으면 meals/{id}, 없으면 newmeal with post
+    onCta: (String) -> Unit,
 ) {
-    val postsSnapshot by FeedStore.posts.collectAsState()
+    val scope = rememberCoroutineScope()
+    var postWithMeta by remember { mutableStateOf<PostWithMeta?>(null) }
+    var related by remember { mutableStateOf<List<PostWithMeta>>(emptyList()) }
 
-    val postWithMeta = remember(postsSnapshot, postId) {
-        FeedStore.getPostById(postId)
-    }
-
-    // 노출 시 tap 신호 기록 (상세 진입 = tap)
+    // 포스트 로드 + tap 신호 (상세 진입 = tap)
     LaunchedEffect(postId) {
-        FeedStore.recordAppetite(postId, PostAppetiteAction.tap)
+        postWithMeta = FeedRepository.getPostById(postId)
+        FeedRepository.recordAppetite(postId, PostAppetiteAction.tap)
+        // 같은 메뉴+지역 관련 포스트 (재유입 loop)
+        val p = postWithMeta?.post
+        if (p != null) {
+            related = FeedRepository.listFeed(menu = p.menu, district = p.district)
+                .filter { it.post.id != postId }
+                .take(2)
+        }
     }
 
     if (postWithMeta == null) {
         Box(Modifier.fillMaxSize().background(HbCream), contentAlignment = Alignment.Center) {
-            Text("포스트를 찾을 수 없어요.", style = MaterialTheme.typography.bodyMedium.copy(color = HbFgSoft))
+            Text(
+                "포스트를 찾을 수 없어요.",
+                style = MaterialTheme.typography.bodyMedium.copy(color = HbFgSoft),
+            )
         }
         return
     }
 
-    val p = postWithMeta.post
+    val p = postWithMeta!!.post
     val emoji = p.photoUrls.firstOrNull() ?: p.menu.emoji()
-
-    // 같은 메뉴+지역 관련 포스트 2개 (재유입 loop)
-    val related = remember(postsSnapshot, postId) {
-        FeedStore.listFeed(menu = p.menu, district = p.district)
-            .filter { it.post.id != postId }
-            .take(2)
-    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(HbCream),
@@ -107,13 +112,13 @@ fun FeedDetailScreen(
                 ) {
                     Icon(Icons.Outlined.ArrowBack, contentDescription = null, tint = HbFg)
                 }
-                MannerBadge(grade = postWithMeta.author.trustGrade)
+                MannerBadge(grade = postWithMeta!!.author.trustGrade)
                 Text(
-                    text = postWithMeta.author.nickname,
+                    text = postWithMeta!!.author.nickname,
                     style = MaterialTheme.typography.titleSmall.copy(color = HbFg),
                 )
                 Text(
-                    text = "매너 ${postWithMeta.author.mannerScore}",
+                    text = "매너 ${postWithMeta!!.author.mannerScore}",
                     style = MaterialTheme.typography.labelSmall.copy(color = HbFgSoft),
                 )
             }
@@ -129,7 +134,6 @@ fun FeedDetailScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(text = emoji, fontSize = 140.sp)
-                // boost 배지
                 if (p.boostUntil != null && p.boostUntil > System.currentTimeMillis()) {
                     Text(
                         text = "⬆ 함밥 세트",
@@ -156,7 +160,6 @@ fun FeedDetailScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // 메뉴 chip + 지역 chip + spot_label chip
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -168,7 +171,6 @@ fun FeedDetailScreen(
                     }
                 }
 
-                // caption
                 if (!p.caption.isNullOrBlank()) {
                     Text(
                         text = p.caption,
@@ -176,7 +178,6 @@ fun FeedDetailScreen(
                     )
                 }
 
-                // 시간 + 호스트 2x1 grid
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -206,7 +207,7 @@ fun FeedDetailScreen(
                             style = MaterialTheme.typography.labelSmall.copy(color = HbFgMuted),
                         )
                         Text(
-                            text = postWithMeta.author.nickname,
+                            text = postWithMeta!!.author.nickname,
                             style = MaterialTheme.typography.titleSmall.copy(
                                 color = HbFg, fontWeight = FontWeight.SemiBold,
                             ),
@@ -214,7 +215,6 @@ fun FeedDetailScreen(
                     }
                 }
 
-                // 태그 chip wrap
                 if (p.tags.isNotEmpty()) {
                     Row(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -224,12 +224,13 @@ fun FeedDetailScreen(
                     }
                 }
 
-                // 풀폭 amber CTA
                 val ctaLabel = if (p.mealId != null) "함밥 자세히 보기" else "같이 먹기"
                 CtaButton(
                     label = ctaLabel,
                     onClick = {
-                        FeedStore.recordAppetite(p.id, PostAppetiteAction.cta_click)
+                        scope.launch {
+                            FeedRepository.recordAppetite(p.id, PostAppetiteAction.cta_click)
+                        }
                         if (p.mealId != null) onMeal(p.mealId) else onCta(p.id)
                     },
                     modifier = Modifier
@@ -237,7 +238,6 @@ fun FeedDetailScreen(
                         .heightIn(min = 52.dp),
                 )
 
-                // 카운터 (디버그/투명성 톤)
                 Text(
                     text = "노출 ${p.viewCount}  ·  탭 ${p.tapCount}  ·  같이먹기 ${p.ctaClickCount}  ·  식욕 ${p.appetiteScore}점",
                     style = MaterialTheme.typography.labelSmall.copy(color = HbFgMuted),
@@ -245,12 +245,10 @@ fun FeedDetailScreen(
             }
         }
 
-        // ── 구분 ─────────────────────────────────────────────────────────
         item {
             Box(Modifier.fillMaxWidth().height(6.dp).background(HbBorder))
         }
 
-        // ── 같은 메뉴+지역 관련 포스트 (재유입 loop) ─────────────────────
         if (related.isNotEmpty()) {
             item {
                 Column(
@@ -273,11 +271,15 @@ fun FeedDetailScreen(
                             PostCardCompact(
                                 post = rel,
                                 onTap = { id ->
-                                    FeedStore.recordAppetite(id, PostAppetiteAction.tap)
+                                    scope.launch {
+                                        FeedRepository.recordAppetite(id, PostAppetiteAction.tap)
+                                    }
                                     onPost(id)
                                 },
                                 onCta = { id ->
-                                    FeedStore.recordAppetite(id, PostAppetiteAction.cta_click)
+                                    scope.launch {
+                                        FeedRepository.recordAppetite(id, PostAppetiteAction.cta_click)
+                                    }
                                     val mid = rel.post.mealId
                                     if (mid != null) onMeal(mid) else onPost(id)
                                 },
@@ -292,5 +294,4 @@ fun FeedDetailScreen(
     }
 }
 
-// MenuCategory emoji 확장 (로컬 사용)
 private fun MenuCategory.emoji() = duckring.hambab.com.util.MENUS.firstOrNull { it.key == this }?.emoji ?: "🍽️"

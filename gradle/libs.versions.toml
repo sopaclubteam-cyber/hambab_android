@@ -6,6 +6,8 @@ lifecycleRuntimeKtx = "2.8.2"
 activityCompose = "1.9.0"
 composeBom = "2025.05.00"
 navigationCompose = "2.8.0"
+supabase = "3.1.4"
+ktor = "3.1.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -29,6 +31,12 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 
 # Material XML themes (Activity 호환)
 material-android = { group = "com.google.android.material", name = "material", version = "1.12.0" }
+
+# Supabase Kotlin SDK (postgrest + auth)
+supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version.ref = "supabase" }
+supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt", version.ref = "supabase" }
+# Ktor OkHttp engine (Supabase HTTP transport)
+ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

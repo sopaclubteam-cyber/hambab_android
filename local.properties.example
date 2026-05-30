@@ -3,6 +3,13 @@
 # Android SDK 경로 (Mac 기본)
 sdk.dir=/Users/YOUR_USER/Library/Android/sdk
 
-# Supabase (Supabase 연동 시 CEO 가 채울 것 — 실 키 절대 커밋 X)
+# Release keystore (hambab-release.keystore)
+# hambab.keystore.path=hambab-release.keystore
+# hambab.keystore.password=YOUR_KEYSTORE_PASSWORD
+# hambab.key.alias=hambab
+# hambab.key.password=YOUR_KEY_PASSWORD
+
+# Supabase — Web/Hambab 와 동일 프로젝트 공유. 실 키 절대 커밋 X.
+# URL/KEY 없으면 앱이 자동으로 mock(in-memory) 모드로 동작 (offline-safe).
 # SUPABASE_URL=https://XXXXXXXXXXXXXXXX.supabase.co
 # SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.PLACEHOLDER
